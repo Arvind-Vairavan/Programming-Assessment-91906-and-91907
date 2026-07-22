@@ -1,7 +1,7 @@
 '''
-In this Version of the I will be trying to incorperate my first class which is called the chracter class using an innit function, 
-to initialize all the attributes a character in this game will have, I will be adding more attricute to make the game realistic as well
+I have added a function to format all the initialized variables into a dictionary format to make things easier to access in the future
 '''
+
 
 import random
 
@@ -18,9 +18,8 @@ class Character:
         self.smarts = random.randint(40, 80)
         self.looks = random.randint(40, 80)
         self.money = random.randint(1000, 5000)
-        # And below are the rest of the attributes which have defult assinged to them  
         self.job = None
-        # This is a string because I want to be able to change to what ever the player's character decide to do e.g. school, university, etc
+        # This is a string because I want to be able to change to what ever the player's character decides to do e.g. school, university, etc
         self.education = "None"
         self.married = False
         self.spouse = None
@@ -42,5 +41,12 @@ class Character:
         self.years_smoking = 0
         self.years_drinking = 0
         self.exercise_frequency = 0
-        # This is a string because I want to be able to change is the values I want which are Poor, Average, Good, Excellent
+        # This is a string because I want to be able to change the values to what I want which are Poor, Average, Good, Excellent
         self.diet_quality = "Average"  
+
+    # so this function is to arrange all these intialized variables into a dictionary
+    # I originnally hard coded it but it took too long to get even halfway so I decide to use a for loop using and a dictionary needs a key value 
+    def to_dict(self):
+        return {key: value for key, value in self.__dict__.items()}
+    
+
