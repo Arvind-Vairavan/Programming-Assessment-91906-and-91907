@@ -1,7 +1,6 @@
 '''
-I have added a function to format all the initialized variables into a dictionary format to make things easier to access in the future
+I have just done a few alterations to this class as I have decided to remove some stuff, and I wont be doing some things that I thought I was gong to do,  later on
 '''
-
 
 import random
 
@@ -9,17 +8,13 @@ class Character:
     def __init__(self, name, gender):
         self.name = name
         self.gender = gender
-        # this is the default starting age, but I said I will try to make this as close as possible to the real game,
-        # but this is one the things I would like to change as nothing really happens, and nothing can really bone before the age of 18 in the game 
-        self.age = 18 
-        # Below are the defult ranges of of said "Stats" which as are to you as soon as you make a chracter
+        self.age = 18
         self.happiness = random.randint(50, 80)
         self.health = random.randint(50, 90)
         self.smarts = random.randint(40, 80)
         self.looks = random.randint(40, 80)
         self.money = random.randint(1000, 5000)
         self.job = None
-        # This is a string because I want to be able to change to what ever the player's character decides to do e.g. school, university, etc
         self.education = "None"
         self.married = False
         self.spouse = None
@@ -30,23 +25,15 @@ class Character:
         self.social = random.randint(30, 70)
         self.criminal_record = False
         self.friends = []
-        # These will be developed through gameplay which is they are set to zero, and are not something you will be given when you make your character
         self.skills = {"Coding": 0, "Art": 0, "Music": 0, "Sports": 0, "Cooking": 0}
-        # This starts of empty but it is a dictionary for the reason that 
-        self.relationships = {}
         self.pets = []
         self.house = None
         self.car = None
         self.health_conditions = []
-        self.years_smoking = 0
-        self.years_drinking = 0
         self.exercise_frequency = 0
-        # This is a string because I want to be able to change the values to what I want which are Poor, Average, Good, Excellent
-        self.diet_quality = "Average"  
-
-    # so this function is to arrange all these intialized variables into a dictionary
-    # I originnally hard coded it but it took too long to get even halfway so I decide to use a for loop using and a dictionary needs a key value 
+        self.diet_quality = "Average"
+        self.vacations = []
+        self.crimes_committed = []
+        
     def to_dict(self):
-        return {key: value for key, value in self.__dict__.items()}
-    
-
+        return {k: v for k, v in self.__dict__.items()}
