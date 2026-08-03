@@ -1,3 +1,12 @@
+'''
+So after some thought and consideration I have decided due to some cancelation, 
+as I have changed my orginal plan as that stuff inside that plan was too long I have decided to shorten it,
+which means not have as much functions and code as I originally thought I would have, 
+so along with that I have decided to shorten then amount of constants I need, 
+by getting rid of a few constants and shortening others
+'''
+
+
 JOBS = {
     "Retail": {"salary": 25000, "req": "None"},
     "Teacher": {"salary": 45000, "req": "Bachelor's"},
@@ -42,10 +51,9 @@ CRIMES = [
 ]
 
 ACHIEVEMENTS = {
-    "Millionaire": lambda c: c.money >= 1000000,
-    "Scholar": lambda c: c.education == "PhD",
-    "Family Person": lambda c: len(c.children) >= 3,
-    "Centenarian": lambda c: c.age >= 100,
-    "Career Master": lambda c: c.job in ["CEO", "Doctor"],
-    "Pet Lover": lambda c: len(c.pets) >= 3,
+    "Millionaire": lambda character: character.money >= 1000000,
+    "Family Person": lambda character: len(character.children) >= 3,
+    "Centenarian": lambda character: character.age >= 100,
+    "Career Master": lambda character: character.job in ["CEO", "Doctor"],
+    "Pet Lover": lambda character: len(character.pets) >= 3,
 }
