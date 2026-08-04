@@ -1,9 +1,10 @@
 """
-Version 3 is where I added proper job selection support. Before this you could only get random jobs but now you can actually choose what you want to do. 
-Added helper methods to get job salaries and check employment status. This makes it way easier for the GUI to display job options to the player instead of just picking randomly.
+Version 4 was mostly bug fixes. The main issue was that you could get promoted way too often, 
+there was no cooldown. So I added a check that makes you wait at least 3 years between promotions. 
+Also improved the error messages.
 
-This version WORKS fine for the new features but the promotion bug from version 2 still exists. 
-I haven't fixed it yet because I was focused on adding the job selection stuff. So you can select jobs now but promotions are still broken.
+This version WORKS much better. The promotion cooldown is fixed and the error messages are helpful now. No bugs in the main functionality. 
+The only thing I could still improve is the experience display formatting but that's minor.
 """
 
 import random
@@ -132,16 +133,21 @@ class CareerSystem:
         if not char.job:
             return "No job!"
         
-        if char.job not in JOBS:
-            return "Job not found!"
-        
+        # FIX: Better error messages with specific numbers
         if char.job_experience < 36:
-            return "Need 3+ years experience!"
+            remaining = 36 - char.job_experience
+            return f"Need {remaining} more months of experience! (3+ years required)"
         
         if char.smarts < 70:
-            return "Need 70+ smarts!"
+            return f"Need {70 - char.smarts} more smarts! (70 required)"
         
-        # BUG: Still no cooldown check!
+        # FIX: Added cooldown check
+        if char.last_promotion_age and char.age - char.last_promotion_age < 3:
+            return "You were recently promoted! Wait 3+ years for another promotion."
+        
+        if char.job not in JOBS:
+            return "Job not found in system!"
+        
         increase = int(JOBS[char.job]["salary"] * 0.2)
         JOBS[char.job]["salary"] += increase
         char.last_promotion_age = char.age
@@ -168,10 +174,17 @@ class CareerSystem:
         if not char.job:
             return "No current job"
         
-        return f"{char.job}\nExperience: {char.job_experience//12} years\nSalary: ${JOBS[char.job]['salary']:,}"
+        # FIX: Better formatting for experience display
+        years = char.job_experience // 12
+        months = char.job_experience % 12
+        experience = f"{years} years" if months == 0 else f"{years} years, {months} months"
+        
+        return f"{char.job}\nExperience: {experience}\nSalary: ${JOBS[char.job]['salary']:,}"
     
     def get_job_salary(self, job_name):
-        return JOBS.get(job_name, {}).get('salary', 0)
+        if job_name in JOBS:
+            return JOBS[job_name].get('salary', 0)
+        return 0
     
     def is_employed(self):
         char = self._get_character()
@@ -182,58 +195,51 @@ class CareerSystem:
 
 
 if __name__ == "__main__":
-    print("VERSION 3 TEST")
+    print("VERSION 4 TEST")
     print("-" * 40)
     
-    # Test 1: Get available jobs (NEW FEATURE)
-    print("TEST 1: Get available jobs")
-    char = Character("Test", "Male")
+    # Test 1: FIX - Cooldown check works now
+    print("TEST 1: Promotion cooldown now works")
+    char = Character("FixedTest", "Male")
+    char.job = "Developer"
+    char.job_experience = 48
+    char.smarts = 90
+    char.age = 25
+    char.last_promotion_age = 25
     game = MockGame(char)
     career = CareerSystem(game)
     
-    jobs = career.get_available_jobs()
-    print("Available jobs:", ", ".join(jobs))
+    print("Age:", char.age)
+    print("Last promotion age:", char.last_promotion_age)
+    print("Years since promotion:", char.age - char.last_promotion_age)
+    result = career.promote_manual()
+    print("Result:", result)
     print()
     
-    # Test 2: Get job salary (NEW FEATURE)
-    print("TEST 2: Get job salary")
-    for job in jobs[:3]:
-        salary = career.get_job_salary(job)
-        print(job + ":", "$" + str(salary) + "/year")
-    print()
-    
-    # Test 3: Check employment status (NEW FEATURE)
-    print("TEST 3: Employment status")
-    print("Is employed?", career.is_employed())
-    char.job = "Developer"
-    print("After setting job...")
-    print("Is employed?", career.is_employed())
-    print()
-    
-    # Test 4: BUG - Promotion cooldown still broken
-    print("TEST 4: BUG - Promotion cooldown still not working")
-    char2 = Character("BugTest", "Male")
-    char2.job = "Artist"
-    char2.job_experience = 48
+    # Test 2: FIX - Promotion after cooldown works
+    print("TEST 2: Promotion after cooldown period")
+    char2 = Character("FixedTest2", "Female")
+    char2.job = "Doctor"
+    char2.job_experience = 60
     char2.smarts = 85
     char2.age = 30
-    char2.last_promotion_age = 30
+    char2.last_promotion_age = 25
     game2 = MockGame(char2)
     career2 = CareerSystem(game2)
     
     print("Age:", char2.age)
     print("Last promotion age:", char2.last_promotion_age)
+    print("Years since promotion:", char2.age - char2.last_promotion_age)
     print("Current salary:", JOBS[char2.job]["salary"])
     result = career2.promote_manual()
     print("Result:", result)
     print("New salary:", JOBS[char2.job]["salary"])
-    print("BUG: Still no cooldown check! Got promoted immediately.")
     print()
     
-    # Test 5: BUG - Vague error messages
-    print("TEST 5: BUG - Vague error messages")
-    char3 = Character("ErrorTest", "Female")
-    char3.job = "Doctor"
+    # Test 3: FIX - Better error messages
+    print("TEST 3: Better error messages")
+    char3 = Character("ErrorTest", "Male")
+    char3.job = "Teacher"
     char3.job_experience = 30
     char3.smarts = 65
     game3 = MockGame(char3)
@@ -243,4 +249,18 @@ if __name__ == "__main__":
     print("Smarts:", char3.smarts)
     result = career3.promote_manual()
     print("Result:", result)
-    print("BUT: Doesn't tell me I need 6 more months and 5 more smarts.")
+    print("FIX: Now tells me exactly how much more I need!")
+    print()
+    
+    # Test 4: FIX - Experience display formatting
+    print("TEST 4: Better experience display")
+    char4 = Character("FormatTest", "Female")
+    char4.job = "CEO"
+    char4.job_experience = 42
+    game4 = MockGame(char4)
+    career4 = CareerSystem(game4)
+    
+    print("Raw experience:", char4.job_experience, "months")
+    print("Formatted info:")
+    print(career4.get_career_info())
+    print("FIX: Shows years and months now!")
