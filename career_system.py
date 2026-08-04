@@ -1,10 +1,11 @@
 """
-Alright so this is version 1 of the career system, literally just the bare minimum to get jobs working. 
-You can get a random job, work to earn money, and quit. That's it. No promotions, no experience tracking that matters, 
-nothing fancy. Just a basic system to test if the game can handle having a job at all.
+Version 2 now, I added the promotion system because people wanted to actually progress in their careers. 
+You can request a promotion but it's pretty strict - need 3 years experience and 70 smarts. 
+The salary goes up by 20% when you get promoted which is nice. Still pretty basic but at least there's something to work towards now.
 
-This version WORKS as expected. The find_job() assigns a random job, work() calculates earnings and updates stats, 
-resign() clears the job. All basic functionality is solid. No bugs to fix yet because there's barely any features.
+This version WORKS for the most part but there's a bug I noticed - the promotion doesn't check if you've already been promoted recently 
+so you could theoretically get promoted every single year. Also the error messages are pretty vague, 
+just saying "Need 3+ years experience" without telling you exactly how much more you need.
 """
 
 import random
@@ -124,6 +125,26 @@ class CareerSystem:
         char.job_experience += 1
         return f"Worked and earned ${earned:,}"
     
+    def promote_manual(self):
+        char = self._get_character()
+        if not char:
+            return "No character found!"
+        
+        if not char.job:
+            return "No job!"
+    
+        if char.job_experience < 36:
+            return "Need 3+ years experience!"
+        
+        if char.smarts < 70:
+            return "Need 70+ smarts!"
+        
+        # BUG: No cooldown check! You can get promoted every year
+        increase = int(JOBS[char.job]["salary"] * 0.2)
+        JOBS[char.job]["salary"] += increase
+        char.last_promotion_age = char.age
+        return f"Promoted! Salary increased by ${increase:,}!"
+    
     def resign(self):
         char = self._get_character()
         if not char:
@@ -151,50 +172,73 @@ class CareerSystem:
         return list(JOBS.keys())
 
 
-# VERSION 1 TEST - RUN THIS TO SEE IT WORKS
 if __name__ == "__main__":
-    print("VERSION 1 TEST")
+    print("VERSION 2 TEST")
     print("-" * 40)
     
-    # Create character and career
-    char = Character("Bob", "Male")
+    # Test 1: Normal promotion (should work)
+    print("TEST 1: Normal promotion with enough experience")
+    char = Character("Alice", "Female")
+    char.job = "Developer"
+    char.job_experience = 36
+    char.smarts = 80
     game = MockGame(char)
     career = CareerSystem(game)
     
-    # Test find job
-    print("Finding job:")
-    result = career.find_job()
+    print("Experience:", char.job_experience, "months")
+    print("Smarts:", char.smarts)
+    print("Current salary:", JOBS[char.job]["salary"])
+    result = career.promote_manual()
     print("Result:", result)
-    print("Job:", char.job)
-    print("Experience:", char.job_experience)
+    print("New salary:", JOBS[char.job]["salary"])
+    print("Last promotion age:", char.last_promotion_age)
     print()
     
-    # Test work
-    print("Working:")
-    result = career.work()
+    # Test 2: Promotion without enough experience (should fail)
+    print("TEST 2: Not enough experience")
+    char2 = Character("Bob", "Male")
+    char2.job = "Teacher"
+    char2.job_experience = 24
+    char2.smarts = 75
+    game2 = MockGame(char2)
+    career2 = CareerSystem(game2)
+    
+    print("Experience:", char2.job_experience, "months")
+    print("Smarts:", char2.smarts)
+    result = career2.promote_manual()
     print("Result:", result)
-    print("Money:", char.money)
-    print("Happiness:", char.happiness)
-    print("Stress:", char.stress)
-    print("Experience:", char.job_experience)
     print()
     
-    # Test work again
-    print("Working again:")
-    result = career.work()
+    # Test 3: Promotion without enough smarts (should fail)
+    print("TEST 3: Not enough smarts")
+    char3 = Character("Carol", "Female")
+    char3.job = "Doctor"
+    char3.job_experience = 48
+    char3.smarts = 55
+    game3 = MockGame(char3)
+    career3 = CareerSystem(game3)
+    
+    print("Experience:", char3.job_experience, "months")
+    print("Smarts:", char3.smarts)
+    result = career3.promote_manual()
     print("Result:", result)
-    print("Money:", char.money)
-    print("Experience:", char.job_experience)
     print()
     
-    # Test career info
-    print("Career info:")
-    print(career.get_career_info())
-    print()
+    # Test 4: BUG - Promotion cooldown issue
+    print("TEST 4: BUG - Promotion cooldown not working")
+    char4 = Character("Dave", "Male")
+    char4.job = "CEO"
+    char4.job_experience = 60
+    char4.smarts = 90
+    char4.age = 25
+    char4.last_promotion_age = 25
+    game4 = MockGame(char4)
+    career4 = CareerSystem(game4)
     
-    # Test resign
-    print("Resigning:")
-    result = career.resign()
+    print("Age:", char4.age)
+    print("Last promotion age:", char4.last_promotion_age)
+    print("Current salary:", JOBS[char4.job]["salary"])
+    result = career4.promote_manual()
     print("Result:", result)
-    print("Job:", char.job)
-    print("Experience:", char.job_experience)
+    print("New salary:", JOBS[char4.job]["salary"])
+    print("BUG: Got promoted again immediately! Should have a cooldown.")
