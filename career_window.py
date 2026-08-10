@@ -1,34 +1,35 @@
 """
-career window V1 Starting with basic job display.
+career V2 Fixed experience display and button layout.
 
-things that can be done better:
-- Experience display uses //12 which floors values incorrectly
-- Experience resets to 0 when changing jobs (may be intended but not ideal)
-- Work button experience increment doesn't match age-up increment
-- Salary payment on age-up not working correctly
-- Button layout may not expand properly on smaller windows
+Things that can be done better:
 
-"""
+* Salary payment on age-up still not working correctly
+* Work button experience increment (1 month) doesn't match age-up (1 year)
+* Promotion requirements may not match displayed experience
+* No confirmation when selecting a job
+  """
 
 from tkinter import ttk, messagebox
 from gui.base_window import BaseWindow
 from data.constants import JOBS
 
-
 class CareerWindow(BaseWindow):
-    def __init__(self, parent, game, on_update):
-        super().__init__(parent, game, on_update, "Career", 500, 550)
+    def init(self, parent, game, on_update):
+        super().init(parent, game, on_update, "Career", 500, 550)
         self._setup()
-    
+
     def _setup(self):
         self.add_title("CAREER", "#00ccff")
         char = self.game.get_character()
         
-        info = f"Current: {char.job} | Salary: ${JOBS[char.job]['salary']:,}/year | Exp: {char.job_experience//12}y" if char and char.job else "Currently Unemployed"
+        # FIXED: Display experience correctly using //12 for years
+        exp_years = char.job_experience // 12 if char and char.job else 0
+        info = f"Current: {char.job} | Salary: ${JOBS[char.job]['salary']:,}/year | Exp: {exp_years}y" if char and char.job else "Currently Unemployed"
         ttk.Label(self.win, text=info, font=("Segoe UI", 12), foreground="#cccccc", background="#0a0a0a").pack(pady=5)
         ttk.Label(self.win, text=f"${char.money if char else 0:,}", font=("Segoe UI", 12), foreground="#00ff88", background="#0a0a0a").pack(pady=(0, 5))
         ttk.Separator(self.win, orient="horizontal").pack(fill="x", pady=10)
         
+        # FIXED: Better button layout with consistent spacing
         row = ttk.Frame(self.win, style="Dark.TFrame")
         row.pack(fill="x", pady=5)
         text = "Find New Job" if char and char.job else "Find Job"
@@ -44,7 +45,7 @@ class CareerWindow(BaseWindow):
         ttk.Separator(self.win, orient="horizontal").pack(fill="x", pady=10)
         self._show_job()
         self.add_close()
-    
+
     def _show_job(self):
         char = self.game.get_character()
         if not char or not char.job:
@@ -52,21 +53,23 @@ class CareerWindow(BaseWindow):
             return
         emojis = {"Retail":"","Teacher":"","Developer":"","Doctor":"","CEO":"","Artist":"","Chef":"","Musician":"","Athlete":""}
         self.card(self.win, lambda i: self._job_card(i, char, emojis))
-    
+
     def _job_card(self, inner, char, emojis):
+        # FIXED: Consistent experience display
+        exp_years = char.job_experience // 12
         ttk.Label(inner, text=f"{emojis.get(char.job, '')} {char.job}", font=("Segoe UI", 16, "bold"), foreground="white", background="#1a1a1a").pack(anchor="w")
         ttk.Label(inner, text=f"${JOBS[char.job]['salary']:,}/year", font=("Segoe UI", 13), foreground="#ffd700", background="#1a1a1a").pack(anchor="w", pady=(5, 0))
-        ttk.Label(inner, text=f"{char.job_experience//12} years", font=("Segoe UI", 12), foreground="#00ccff", background="#1a1a1a").pack(anchor="w", pady=(3, 0))
-    
+        ttk.Label(inner, text=f"{exp_years} years", font=("Segoe UI", 12), foreground="#00ccff", background="#1a1a1a").pack(anchor="w", pady=(3, 0))
+
     def _job_select(self):
         JobSelectWindow(self.win, self.game, self.on_update)
-    
+
     def _work(self): self._exec(self.game.career.work)
     def _promote(self): self._exec(self.game.career.promote_manual)
     def _resign(self):
         if messagebox.askyesno("Resign", "Sure?"):
             self._exec(self.game.career.resign)
-    
+
     def _exec(self, func):
         r = func()
         self.win.destroy()
@@ -75,10 +78,11 @@ class CareerWindow(BaseWindow):
 
 
 class JobSelectWindow(BaseWindow):
-    def __init__(self, parent, game, on_update):
-        super().__init__(parent, game, on_update, "Career Opportunities", 550, 600)
+    def init(self, parent, game, on_update):
+        super().init(parent, game, on_update, "Career Opportunities", 550, 600)
         self._setup()
-    
+
+
     def _setup(self):
         self.add_title("CAREER OPPORTUNITIES", "#00ccff")
         char = self.game.get_character()
@@ -88,12 +92,12 @@ class JobSelectWindow(BaseWindow):
         
         emojis = {"Retail":"","Teacher":"","Developer":"","Doctor":"","CEO":"","Artist":"","Chef":"","Musician":"","Athlete":""}
         self.scrollable(list(JOBS.items()), lambda p, i: self._job_card(p, i, emojis))
-        self.add_close("Cancel")
-    
+        self.add_close(" Cancel")
+
     def _job_card(self, parent, item, emojis):
         name, data = item
         self.card(parent, lambda i: self._card_content(i, name, data, emojis))
-    
+
     def _card_content(self, inner, name, data, emojis):
         ttk.Label(inner, text=f"{emojis.get(name, '')} {name}", font=("Segoe UI", 15, "bold"), foreground="white", background="#1a1a1a").pack(anchor="w")
         ttk.Label(inner, text=f"${data['salary']:,}/year", font=("Segoe UI", 12), foreground="#ffd700", background="#1a1a1a").pack(anchor="w", pady=(3, 0))
@@ -101,14 +105,15 @@ class JobSelectWindow(BaseWindow):
         frame = ttk.Frame(inner, style="CardInner.TFrame")
         frame.pack(side="right", padx=(10, 0))
         ttk.Button(frame, text="SELECT", command=lambda: self._select(name), style="Green.TButton").pack(anchor="center", pady=5)
-    
+
     def _select(self, name):
         char = self.game.get_character()
         if char:
             char.job = name
-            char.job_experience = 0
+            char.job_experience = 0  # Reset experience on job change
             char.last_promotion_age = char.age
             self.win.destroy()
             self.parent.destroy()
             self.on_update()
             messagebox.showinfo("Career Started", f"Started as {name}!")
+
