@@ -1,59 +1,41 @@
-'''
-So after some thought and consideration I have decided due to some cancelation, 
-as I have changed my orginal plan as that stuff inside that plan was too long I have decided to shorten it,
-which means not have as much functions and code as I originally thought I would have, 
-so along with that I have decided to shorten then amount of constants I need, 
-by getting rid of a few constants and shortening others
-'''
-
+"""
+So these are my constants that I have left that I will be actually using, the rest I wont be using so I removed them, this is the final cutdown hopfefully
+"""
 
 JOBS = {
-    "Retail": {"salary": 25000, "req": "None"},
-    "Teacher": {"salary": 45000, "req": "Bachelor's"},
-    "Developer": {"salary": 85000, "req": "Bachelor's"},
-    "Doctor": {"salary": 120000, "req": "Master's"},
-    "CEO": {"salary": 200000, "req": "Master's"},
-    "Artist": {"salary": 55000, "req": "Bachelor's"},
-    "Chef": {"salary": 40000, "req": "None"},
-    "Musician": {"salary": 65000, "req": "None"},
-    "Athlete": {"salary": 150000, "req": "None"},
+    "Retail": {"salary": 25000},     
+    "Teacher": {"salary": 45000},     
+    "Developer": {"salary": 85000},  
+    "Doctor": {"salary": 120000},     
+    "CEO": {"salary": 200000},        
+    "Artist": {"salary": 55000},     
+    "Chef": {"salary": 40000},       
+    "Musician": {"salary": 65000},   
+    "Athlete": {"salary": 150000},    
 }
 
-PETS = ["Dog", "Cat", "Bird", "Fish", "Hamster"]
-PET_COSTS = {"Dog": 500, "Cat": 300, "Bird": 100, "Fish": 50, "Hamster": 80}
 
-HOUSES = [
-    {"name": "Studio", "cost": 100000},
-    {"name": "Apartment", "cost": 200000},
-    {"name": "House", "cost": 350000},
-    {"name": "Mansion", "cost": 1000000},
+PETS = [
+    {"name": "Dog", "cost": 500},   
+    {"name": "Cat", "cost": 300},    
+    {"name": "Bird", "cost": 100},   
+    {"name": "Fish", "cost": 50},   
+    {"name": "Hamster", "cost": 80},  
+    {"name": "Rabbit", "cost": 120},  
+    {"name": "Turtle", "cost": 150},  
 ]
 
-CARS = [
-    {"name": "Sedan", "cost": 5000},
-    {"name": "SUV", "cost": 25000},
-    {"name": "Sports Car", "cost": 80000},
-    {"name": "Luxury Car", "cost": 150000},
-]
-
-VACATIONS = [
-    {"name": "Paris", "cost": 3000, "happiness": 30},
-    {"name": "Bali", "cost": 2500, "happiness": 35},
-    {"name": "Tokyo", "cost": 4000, "happiness": 30},
-    {"name": "Santorini", "cost": 2800, "happiness": 40},
-]
 
 CRIMES = [
-    {"name": "Theft", "reward": 200, "risk": 20},
-    {"name": "Robbery", "reward": 500, "risk": 30},
-    {"name": "Grand Theft Auto", "reward": 2000, "risk": 40},
-    {"name": "Bank Robbery", "reward": 5000, "risk": 60},
+    {"name": "Theft", "reward": 200, "risk": 20},         
+    {"name": "Robbery", "reward": 500, "risk": 30},        
+    {"name": "Grand Theft Auto", "reward": 2000, "risk": 40}, 
+    {"name": "Bank Robbery", "reward": 5000, "risk": 60},  
+    {"name": "Cyber Crime", "reward": 3000, "risk": 35},  
+    {"name": "Arson", "reward": 1500, "risk": 45},         
 ]
 
-ACHIEVEMENTS = {
-    "Millionaire": lambda character: character.money >= 1000000,
-    "Family Person": lambda character: len(character.children) >= 3,
-    "Centenarian": lambda character: character.age >= 100,
-    "Career Master": lambda character: character.job in ["CEO", "Doctor"],
-    "Pet Lover": lambda character: len(character.pets) >= 3,
-}
+MALE_NAMES = ["Alex", "Jordan", "Taylor", "Morgan", "Casey", "Riley", "Drew", "Avery"]
+FEMALE_NAMES = ["Emma", "Sophia", "Olivia", "Ava", "Mia", "Charlotte", "Amelia", "Harper"]
+CHILD_NAMES = ["Emma", "Liam", "Olivia", "Noah", "Sophia", "Oliver", "Ava", "Mason", "Charlotte", "Lucas"]
+FRIEND_NAMES = ["Emma", "Liam", "Olivia", "Noah", "Sophia", "Oliver", "Ava", "Mason", "Charlotte", "Lucas", "Amelia", "Ethan"]
