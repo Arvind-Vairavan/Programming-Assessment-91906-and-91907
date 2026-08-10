@@ -1,6 +1,7 @@
 '''
-I have just done a few alterations to this class as I have decided to remove some stuff, and I wont be doing some things that I thought I was gong to do,  later on
+So in this version of the the character class is just where I add, what I think are a few more helpful function that should go in this class
 '''
+
 
 import random
 
@@ -19,21 +20,32 @@ class Character:
         self.married = False
         self.spouse = None
         self.children = []
-        self.is_alive = True
-        self.life_events = [f"Born as {gender}"]
+        self.alive = True
+        self.events = [f"Born as {gender}"]
         self.stress = random.randint(20, 50)
         self.social = random.randint(30, 70)
         self.criminal_record = False
-        self.friends = []
-        self.skills = {"Coding": 0, "Art": 0, "Music": 0, "Sports": 0, "Cooking": 0}
         self.pets = []
         self.house = None
         self.car = None
-        self.health_conditions = []
-        self.exercise_frequency = 0
-        self.diet_quality = "Average"
         self.vacations = []
         self.crimes_committed = []
-        
+        self.lottery_won = False
+
+    def change_stat(self, stat, amount):
+        if stat in self.__dict__:
+            self.__dict__[stat] = max(0, min(100, self.__dict__[stat] + amount))
+
+    def add_event(self, message):
+        self.events.append(message)
+
+    def add_money(self, amount):
+        self.money = max(0, self.money + amount)
+
     def to_dict(self):
-        return {k: v for k, v in self.__dict__.items()}
+        return self.__dict__.copy()
+
+def character_from_dict(data):
+    char = Character(data["name"], data["gender"])
+    char.__dict__.update(data)
+    return char
