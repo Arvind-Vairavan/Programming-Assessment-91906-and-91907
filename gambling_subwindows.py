@@ -1,8 +1,21 @@
 """
-Version 2 of Gambling Subwindows
+Version Gambling Subwindows V3
 
-This version contains the second iteration of the gambling subwindows.
+- Slot Machine (3-reel with 7 symbols and progressive payouts)
+- Roulette (American style with 0-36, color and number bets)
+- Horse Racing (4 horses with different odds and visual feedback)
 
+Everyhting I fixed that was still and bug in the previous version 
+- Fixed zip() iteration in generate_bet_options
+- Added None checks in validate_bet
+- Fixed lambda capture in HorseRacingWindow
+- Added proper error handling in RouletteWindow
+- Fixed spinning state in SlotsWindow
+- Added parent window refresh handling
+- Fixed money display when character has no money
+- Added validation for number input in roulette
+- Prevented multiple simultaneous spins
+- Fixed bet options update on focus
 """
 
 import random, time, tkinter as tk
@@ -12,44 +25,39 @@ from gui.base_window import BaseWindow
 
 def generate_bet_options(money):
     """
-    BUG FIX: Fixed zip() iteration - was incorrectly using 'percent' variable
-    BUG FIX: Added validation to prevent negative or zero bets
-    BUG FIX: Ensured "All In" is always included and properly handled
-    BUG FIX: Filtered out bet amounts that exceed current money
+    Generate smart betting options based on player's current money.
     """
     options = []
     
     if money <= 0:
         return ["All In"]
     
-    # Base fixed amounts that work well for most players
+    # Fixed base amounts suitable for most players
     base_amounts = [1, 5, 10, 25, 50, 100, 250, 500, 1000]
     
     for amount in base_amounts:
         if amount <= money:
             options.append(str(amount))
     
-    # Percentage-based bets for larger amounts
+    # Percentage-based bets for larger bankrolls
     percentages = [0.05, 0.10, 0.15, 0.25, 0.50]
     labels = ["Small", "Medium", "Medium+", "Big", "High Roller"]
     
-    # BUG FIX: Corrected zip to properly unpack both values
     for percent, label in zip(percentages, labels):
         amount = int(money * percent)
         
-        # Round to sensible values for better UX
+        # Round to user-friendly values
         if amount < 100:
-            amount = round(amount / 10) * 10
+            amount = round(amount / 10) * 10  # Round to nearest 10
         elif amount < 1000:
-            amount = round(amount / 50) * 50
+            amount = round(amount / 50) * 50  # Round to nearest 50
         else:
-            amount = round(amount / 100) * 100
+            amount = round(amount / 100) * 100  # Round to nearest 100
         
-        # BUG FIX: Added check to ensure amount is valid and not a duplicate
         if amount > 0 and amount <= money and str(amount) not in options:
             options.append(str(amount))
     
-    # Always include "All In" option
+    # Always include "All In" as the maximum bet
     options.append("All In")
     
     # Remove duplicates and sort numerically
@@ -63,7 +71,7 @@ def generate_bet_options(money):
     
     numeric_options = sorted(set(numeric_options))
     
-    # BUG FIX: Filter options that exceed current money
+    # Convert back to strings and add "All In" at the end
     result = [str(opt) for opt in numeric_options if opt <= money]
     result.append("All In")
     
@@ -72,7 +80,7 @@ def generate_bet_options(money):
 
 def get_bet_value(bet_str, money):
     """
-    BUG FIX: Added None return for invalid strings instead of crashing
+    Convert bet string to integer value.
     """
     if bet_str == "All In":
         return money
@@ -84,9 +92,7 @@ def get_bet_value(bet_str, money):
 
 def validate_bet(bet, money):
     """
-    BUG FIX: Added None check before other validations
-    BUG FIX: Improved error messages with proper formatting
-    BUG FIX: Added clear feedback for each validation failure
+    Validate bet amount with comprehensive error checking.
     """
     if bet is None:
         return None, "Invalid bet amount"
@@ -99,20 +105,20 @@ def validate_bet(bet, money):
 
 class BaseGamblingWindow(BaseWindow):
     """
-    BUG FIX: Added proper parent window refresh handling
-    BUG FIX: Fixed money label update when character has no money
-    BUG FIX: Prevented bet selection that exceeds current money
+    Base class for all gambling windows.
     """
     
     def __init__(self, parent, game, on_update, title, width, height):
+        """
+        Initialize base gambling window.
+        """
         super().__init__(parent, game, on_update, title, width, height)
         self.parent_window = parent
         self.money_label = None
     
     def _update_money(self):
         """
-        BUG FIX: Added proper handling when character has no money
-        BUG FIX: Now displays $0 instead of crashing when money is None
+        Update money display to match character's current money.
         """
         char = self.game.get_character()
         if char and self.money_label:
@@ -122,8 +128,7 @@ class BaseGamblingWindow(BaseWindow):
     
     def _refresh_all(self):
         """
-        BUG FIX: Added check for parent window refresh method existence
-        BUG FIX: Now properly updates all displays before refreshing parent
+        Refresh all displays and notify parent window.
         """
         self._update_money()
         if self.on_update:
@@ -133,9 +138,7 @@ class BaseGamblingWindow(BaseWindow):
     
     def _update_bet_options(self):
         """
-        BUG FIX: Properly handles current bet value when money changes
-        BUG FIX: Prevents selection of bets that exceed current money
-        BUG FIX: Now gracefully handles invalid bet selections
+        Update bet dropdown with current money options.
         """
         char = self.game.get_character()
         if char and hasattr(self, 'bet_combo'):
@@ -143,7 +146,6 @@ class BaseGamblingWindow(BaseWindow):
             self.bet_combo['values'] = options
             current = self.bet_var.get() if hasattr(self, 'bet_var') else ""
             
-            # BUG FIX: Check if current bet is still valid
             if current not in options and current != "All In":
                 try:
                     val = int(current)
@@ -156,8 +158,7 @@ class BaseGamblingWindow(BaseWindow):
     
     def _get_bet(self):
         """
-        BUG FIX: Added proper error handling for empty or invalid input
-        BUG FIX: Now returns None instead of crashing on invalid input
+        Validate and return the bet amount.
         """
         char = self.game.get_character()
         if not char:
@@ -174,22 +175,23 @@ class BaseGamblingWindow(BaseWindow):
 
 class SlotsWindow(BaseGamblingWindow):
     """
-    BUG FIX: Fixed spinning state to prevent multiple simultaneous spins
-    BUG FIX: Properly refreshes money after each spin
-    BUG FIX: Animation now correctly stops at final result
-    BUG FIX: Disabled spin button during animation to prevent spam
+    Slot Machine game window with animated reels.
     """
     
     def __init__(self, parent, game, on_update):
+        """
+        Initialize Slot Machine window.
+        """
         super().__init__(parent, game, on_update, "Slot Machine", 600, 600)
         self.win.configure(bg="black")
-        self.spinning = False
+        self.spinning = False  # Prevents multiple simultaneous spins
         self._setup()
     
     def _setup(self):
+        """Setup the slot machine user interface."""
         self.add_title("🎰 SLOT MACHINE 🎰", "#ffd700")
         
-        # Money display with proper formatting
+        # Money display with green text on black background
         self.money_label = ttk.Label(
             self.win, 
             font=("Segoe UI", 14, "bold"), 
@@ -199,7 +201,7 @@ class SlotsWindow(BaseGamblingWindow):
         self.money_label.pack(pady=5)
         self._update_money()
         
-        # Three reels with consistent styling
+        # Three reels with styling
         f = ttk.Frame(self.win, style="Dark.TFrame")
         f.pack(pady=20)
         self.reels = []
@@ -211,7 +213,7 @@ class SlotsWindow(BaseGamblingWindow):
         for r in self.reels: 
             r.config(text="🍒")
         
-        # Bet controls with dropdown
+        # Bet controls
         bf = ttk.Frame(self.win, style="Dark.TFrame")
         bf.pack(pady=10)
         ttk.Label(bf, text="Bet Amount:", font=("Segoe UI", 12), 
@@ -224,12 +226,12 @@ class SlotsWindow(BaseGamblingWindow):
         self._update_bet_options()
         self.bet_combo.bind('<FocusIn>', lambda e: self._update_bet_options())
         
-        # BUG FIX: Spin button properly disabled during animation
+        # Spin button with green style
         self.spin_btn = ttk.Button(self.win, text="🎰 SPIN 🎰", 
                                    command=self._spin, style="Green.TButton")
         self.spin_btn.pack(pady=10)
         
-        # Info display for win/loss messages
+        # Information display for win/loss messages
         self.info = ttk.Label(self.win, font=("Segoe UI", 12), 
                              foreground="#cccccc", background="black", wraplength=500)
         self.info.pack(pady=10)
@@ -237,10 +239,7 @@ class SlotsWindow(BaseGamblingWindow):
     
     def _spin(self):
         """
-        BUG FIX: Prevents spinning while already in progress
-        BUG FIX: Properly updates all displays after spin
-        BUG FIX: Handles errors gracefully without crashing
-        BUG FIX: Animation now properly stops at final symbols
+        Execute a slot machine spin with animation.
         """
         if self.spinning: 
             return
@@ -252,12 +251,12 @@ class SlotsWindow(BaseGamblingWindow):
         if bet is None:
             return
         
-        # Start spinning state
+        # Start spinning
         self.spinning = True
         self.spin_btn.config(state="disabled")
         self.info.config(text="🎲 Spinning... 🎲")
         
-        # Animated spinning with random symbols
+        # Animation loop
         symbols = ['🍒','🍋','🍊','🍇','🔔','💎','7️⃣']
         for _ in range(10):
             for r in self.reels: 
@@ -265,15 +264,15 @@ class SlotsWindow(BaseGamblingWindow):
             self.win.update()
             time.sleep(0.05)
         
-        # Get actual result from game logic
+        # Get result from gambling system
         result = self.game.gambling.slot_spin(bet)
         
-        # BUG FIX: Updated displays before checking for errors
+        # Update displays
         self._update_money()
         self._update_bet_options()
         self._refresh_all()
         
-        # Display final result
+        # Display result
         if "error" in result:
             self.info.config(text=f"❌ {result['error']}")
         else:
@@ -291,17 +290,19 @@ class SlotsWindow(BaseGamblingWindow):
 
 class HorseRacingWindow(BaseGamblingWindow):
     """
-    BUG FIX: Fixed lambda function to capture horse name correctly
-    BUG FIX: Proper odds display and payout calculation
-    BUG FIX: Now properly validates bet before placing
+    Horse Racing betting window.
     """
     
     def __init__(self, parent, game, on_update):
+        """
+        Initialize Horse Racing window.
+        """
         super().__init__(parent, game, on_update, "Horse Racing", 550, 550)
         self.win.configure(bg="black")
         self._setup()
     
     def _setup(self):
+        """Setup the horse racing user interface."""
         self.add_title("🏇 HORSE RACING 🏇", "#ffd700")
         
         # Money display
@@ -327,7 +328,7 @@ class HorseRacingWindow(BaseGamblingWindow):
         self._update_bet_options()
         self.bet_combo.bind('<FocusIn>', lambda e: self._update_bet_options())
         
-        # Horse list with odds and visual elements
+        # Horse display
         horses = [
             ("Thunder", 3, "⚡", "#ff8800"),
             ("Lightning", 5, "🌩️", "#00ccff"),
@@ -335,7 +336,7 @@ class HorseRacingWindow(BaseGamblingWindow):
             ("Storm", 2, "🌪️", "#00ff88"),
         ]
         
-        # BUG FIX: lambda captures name correctly with default argument
+        # Create bet button for each horse
         for name, odds, emoji, color in horses:
             f = ttk.Frame(self.win, style="Dark.TFrame")
             f.pack(fill="x", pady=5, padx=30)
@@ -345,7 +346,7 @@ class HorseRacingWindow(BaseGamblingWindow):
             ttk.Button(f, text="BET", command=lambda n=name: self._bet(n), 
                       style="Green.TButton").pack(side="right", padx=10)
         
-        # Message display for race results
+        # Race result message display
         self.msg = ttk.Label(self.win, font=("Segoe UI", 13, "bold"), 
                             foreground="#ffd700", background="black", wraplength=500)
         self.msg.pack(pady=10)
@@ -353,9 +354,7 @@ class HorseRacingWindow(BaseGamblingWindow):
     
     def _bet(self, name):
         """
-        BUG FIX: Properly validates bet before placing
-        BUG FIX: Updates all displays after race
-        BUG FIX: Handles case when character has no money
+        Place a bet on a specific horse.
         """
         char = self.game.get_character()
         if not char: 
@@ -374,18 +373,19 @@ class HorseRacingWindow(BaseGamblingWindow):
 
 class RouletteWindow(BaseGamblingWindow):
     """
-    BUG FIX: Fixed result display to show numbers properly
-    BUG FIX: Color display now correctly maps to emoji
-    BUG FIX: Number input properly validated
-    BUG FIX: Added error handling for invalid number selection
+    Roulette game window with color and number betting.
     """
     
     def __init__(self, parent, game, on_update):
+        """
+        Initialize Roulette window.
+        """
         super().__init__(parent, game, on_update, "Roulette", 600, 600)
         self.win.configure(bg="black")
         self._setup()
     
     def _setup(self):
+        """Setup the roulette user interface."""
         self.add_title("🎲 ROULETTE 🎲", "#ffd700")
         
         # Money display
@@ -398,7 +398,7 @@ class RouletteWindow(BaseGamblingWindow):
         self.money_label.pack(pady=5)
         self._update_money()
         
-        # Wheel result display with visual feedback
+        # Wheel result display
         f = ttk.Frame(self.win, style="Dark.TFrame")
         f.pack(pady=10)
         self.result = ttk.Label(f, font=("Segoe UI", 48), foreground="#ffd700", 
@@ -436,7 +436,7 @@ class RouletteWindow(BaseGamblingWindow):
         ttk.Button(bf2, text="⚫ Black", command=lambda: self._spin("black"), 
                   style="Blue.TButton").pack(side="left", padx=5)
         
-        # Number betting with validation
+        # Number betting
         nf = ttk.Frame(self.win, style="Dark.TFrame")
         nf.pack(pady=5)
         ttk.Label(nf, text="Number:", font=("Segoe UI", 12), 
@@ -452,10 +452,7 @@ class RouletteWindow(BaseGamblingWindow):
     
     def _spin(self, choice):
         """
-        BUG FIX: Properly validates number selection
-        BUG FIX: Color mapping now works correctly
-        BUG FIX: Displays both number and color result
-        BUG FIX: Added error handling for invalid bets
+        Execute a roulette spin.
         """
         char = self.game.get_character()
         if not char: 
@@ -465,7 +462,7 @@ class RouletteWindow(BaseGamblingWindow):
         if bet is None:
             return
         
-        # BUG FIX: Validate number input before using
+        # Validate number input for number bets
         num = None
         if choice == "number":
             try:
@@ -477,13 +474,14 @@ class RouletteWindow(BaseGamblingWindow):
                 messagebox.showerror("Error", "Please select a valid number")
                 return
         
+        # Get result from gambling system
         r = self.game.gambling.roulette_spin(bet, choice, num)
         
         if "error" in r:
             messagebox.showerror("Error", r["error"])
             return
         
-        # BUG FIX: Display result with proper formatting
+        # Display result with color indicator
         self.result.config(text=str(r['result']))
         colors = {"Red":"🔴","Black":"⚫","Green":"🟢"}
         self.color.config(text=f"{colors.get(r['color'], '')} {r['color']}")
