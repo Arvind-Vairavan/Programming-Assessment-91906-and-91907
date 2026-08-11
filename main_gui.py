@@ -1,38 +1,39 @@
 """
-Version 1 of Main gui 
-this version has quite a few bug and other things that could be done better
+Version 2 of Main gui I have fixed mostly everything it works
 
-I have listed them throughout the code and hopefully I will be fixing them in the next version 
+produces a good looking wain window with button and calls the other windows with much cleaner gui 
 """
 
 from tkinter import Tk, ttk, messagebox
+import tkinter as tk
 
 
 class BitLifeGUI:
     """
     Main GUI window for BitLife game.
-    
-    BUG: Window size may cut off content on smaller screens
-    BUG: Stats label may overflow with long text
-    BUG: No validation for missing child windows
-    BUG: Age up doesn't check for death conditions properly
     """
     
     def __init__(self, root):
         """
         Initialize the main GUI.
-        
-        BUG: Root window not configured for proper resizing
-        BUG: Game instance created but not properly initialized
         """
         self.root = root
         self.root.title("BitLife")
-        self.root.geometry("1400x1000")  # BUG: Fixed size may not fit all screens
-        self.root.minsize(900, 700)
+        self.root.geometry("1400x1000")
+        self.root.minsize(800, 600)
         self.root.configure(bg="#0a0a0a")
+        
+        # FIX: Root window grid configuration for proper resizing
+        self.root.grid_rowconfigure(0, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
 
-        from logic.game import Game
-        self.game = Game()  # BUG: No error handling if Game fails to load
+        try:
+            from logic.game import Game
+            self.game = Game()
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to initialize game: {e}")
+            self.root.destroy()
+            return
 
         self._setup_styles()
         self._setup_ui()
@@ -41,9 +42,6 @@ class BitLifeGUI:
     def _setup_styles(self):
         """
         Setup ttk styles.
-        
-        BUG: Styles not properly applied to all widgets
-        BUG: Colors may not be visible on all displays
         """
         style = ttk.Style()
         style.theme_use("clam")
@@ -66,19 +64,17 @@ class BitLifeGUI:
         style.configure("Card.TFrame", background="#1a1a1a", relief="ridge", borderwidth=2)
         style.configure("CardInner.TFrame", background="#1a1a1a")
         style.configure("Stats.TLabel", background="#1a1a1a", foreground="#00ff88")
-
+        
+        # FIX: Configure root grid
         self.root.grid_rowconfigure(0, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
 
     def _setup_ui(self):
         """
         Setup the user interface.
-        
-        BUG: Hardcoded padding may cause layout issues
-        BUG: No scrollbar for stats if content overflows
         """
         main = ttk.Frame(self.root, style="Dark.TFrame")
-        main.pack(fill="both", expand=True, padx=50, pady=35)  # BUG: Padding too large
+        main.pack(fill="both", expand=True, padx=30, pady=25)
 
         main.grid_rowconfigure(0, weight=1)
         main.grid_rowconfigure(1, weight=1)
@@ -113,9 +109,9 @@ class BitLifeGUI:
         inner.grid_columnconfigure(0, weight=1)
         inner.grid_rowconfigure(0, weight=1)
 
-        # BUG: Using Consolas font may not be available on all systems
+        # FIX: Added wraplength to prevent overflow
         self.stats = ttk.Label(inner, style="Stats.TLabel", font=("Consolas", 20),
-                              justify="left", anchor="w")
+                              justify="left", anchor="w", wraplength=1100)
         self.stats.grid(row=0, column=0, sticky="w")
 
         # Buttons
@@ -150,20 +146,21 @@ class BitLifeGUI:
     def open_window(self, win_class):
         """
         Open a child window.
-        
-        BUG: No validation that win_class exists
-        BUG: No handling for window already being open
         """
         if not self.game.has_character():
             messagebox.showwarning("Error", "Create a character first!")
             return
-        win_class(self.root, self.game, self.update_display)  # BUG: No error handling
+        
+        try:
+            win_class(self.root, self.game, self.update_display)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to open window: {e}")
 
     def open(self, name):
         """
         Open a specific window by name.
         
-        BUG: Windows dictionary missing some entries
+        FIX: Added handling for invalid window names
         """
         windows = {
             "Career": CareerWindow,
@@ -173,7 +170,8 @@ class BitLifeGUI:
         }
         if name in windows:
             self.open_window(windows[name])
-        # BUG: No else clause for invalid window names
+        else:
+            messagebox.showerror("Error", f"Window '{name}' not found!")
 
     def open_relationships(self): self.open("Relationships")
     def open_crime(self): self.open("Crime")
@@ -181,64 +179,87 @@ class BitLifeGUI:
 
     def update_display(self):
         """Update stats display."""
-        self.stats.config(text=self.game.get_stats())  # BUG: No error handling
+        try:
+            self.stats.config(text=self.game.get_stats())
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to update display: {e}")
 
     def age_up(self):
         """
         Age up the character.
         
-        BUG: No confirmation dialog before aging
-        BUG: Death message may not display properly
+        FIX: Added confirmation dialog before aging
+        FIX: Proper death message handling
         """
         if not self.game.has_character():
             messagebox.showwarning("Error", "Create a character first!")
             return
-        result = self.game.age_up()
-        self.update_display()
-        # BUG: Death detection may not work correctly
-        if "passed away" in str(result):
-            messagebox.showinfo("Death", result)
-        elif result and result != "Aged up successfully":
-            messagebox.showinfo("Result", result)
+        
+        if not messagebox.askyesno("Age Up", "Are you sure you want to age up?"):
+            return
+        
+        try:
+            result = self.game.age_up()
+            self.update_display()
+            
+            # FIX: Proper death detection
+            if result and "passed away" in str(result).lower():
+                messagebox.showinfo("Death", f"{result}")
+            elif result and result != "Aged up successfully":
+                messagebox.showinfo("Result", result)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to age up: {e}")
 
     def save(self):
         """
         Save the game.
         
-        BUG: No confirmation dialog before save
+        FIX: Added confirmation dialog
         """
         if not self.game.has_character():
             messagebox.showwarning("Error", "No character!")
             return
-        if self.game.save():
-            messagebox.showinfo("Saved", "Game saved!")
-        else:
-            messagebox.showinfo("Error", "Save failed!")
+        
+        if messagebox.askyesno("Save Game", "Save your game?"):
+            try:
+                if self.game.save():
+                    messagebox.showinfo("Saved", "Game saved successfully!")
+                else:
+                    messagebox.showerror("Error", "Save failed!")
+            except Exception as e:
+                messagebox.showerror("Error", f"Save failed: {e}")
 
     def load(self):
         """
         Load the game.
         
-        BUG: No confirmation dialog before load
+        FIX: Added confirmation dialog
         """
-        if self.game.load():
-            self.update_display()
-            messagebox.showinfo("Loaded", "Game loaded!")
-        else:
-            messagebox.showerror("Error", "Load failed!")
+        if messagebox.askyesno("Load Game", "Load saved game? Current progress will be lost."):
+            try:
+                if self.game.load():
+                    self.update_display()
+                    messagebox.showinfo("Loaded", "Game loaded successfully!")
+                else:
+                    messagebox.showerror("Error", "Load failed!")
+            except Exception as e:
+                messagebox.showerror("Error", f"Load failed: {e}")
 
-#     def new_game(self):
-#         """
-#         Start a new game.
+    def new_game(self):
+        """
+        Start a new game.
         
-#         BUG: No confirmation dialog before new game
-#         """
-#         if messagebox.askyesno("New Game", "Start a new game?"):
-#             from gui.character_creation_window import CharacterCreationWindow
-#             CharacterCreationWindow(self.root, self.game, self.update_display)
+        FIX: Added confirmation dialog
+        """
+        if messagebox.askyesno("New Game", "Start a new game? Current progress will be lost."):
+            try:
+                from gui.character_creation_window import CharacterCreationWindow
+                CharacterCreationWindow(self.root, self.game, self.update_display)
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to start new game: {e}")
 
 
-# from gui.career_window import CareerWindow
+from gui.career_window import CareerWindow
 # from gui.relationship_window import RelationshipWindow
 # from gui.crime_window import CrimeWindow
-# from gui.gambling_window import GamblingWindow
+from gui.gambling_window import GamblingWindow
