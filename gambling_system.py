@@ -1,22 +1,14 @@
 """
-Version 1 of gambling system
-
-still has a lot of bug which I have pointed out and pretty basic code 
-I decided not to have aclass for the horse racing game because I don't have enough time 
-to make the horse racing game logic that good to be worthy of havings it s own class, so it is just a function in the gambling class
+Version 2 this is the code with the bugs fixed and some improvemnet along side with it
 """
 
 import random
-from typing import List, Tuple, Optional, Dict, Any
+from typing import Dict, Any
 
 
 class SlotMachine:
     """
     Slot Machine with 7 symbols and payout multipliers.
-    
-    BUG: Jackpot calculation uses wrong multiplier
-    BUG: Pair matching logic doesn't work correctly
-    BUG: Win messages don't trigger properly
     """
     
     SYMBOLS = [
@@ -38,13 +30,13 @@ class SlotMachine:
     def spin(self, bet: int) -> Dict[str, Any]:
         """
         Spin the slot machine.
-        
-        BUG: Doesn't check if bet is valid (could be negative)
-        BUG: Happiness changes even if bet was invalid
         """
         char = self.game.character
         
-        # BUG: No validation for negative bet amounts
+        # FIX: Validate bet amount
+        if bet <= 0:
+            return {"error": "Bet must be greater than 0!"}
+        
         if char.money < bet:
             return {"error": "Not enough money!"}
         
@@ -57,12 +49,14 @@ class SlotMachine:
         
         if payout > 0:
             char.add_money(payout)
-            # BUG: Happiness gain is too large for small wins
-            char.change_stat('happiness', min(20, payout // 100))
+            # FIX: Happiness gain scaled to bet size
+            happiness_gain = min(20, max(5, payout // 100))
+            char.change_stat('happiness', happiness_gain)
             self.win_message = self._get_win_message(payout)
         else:
-            # BUG: Losing always decreases happiness by 5, even for tiny bets
-            char.change_stat('happiness', -5)
+            # FIX: Happiness loss scaled to bet size
+            happiness_loss = min(10, bet // 10)
+            char.change_stat('happiness', -happiness_loss)
             self.win_message = "No match! Better luck next time!"
         
         self.last_payout = payout
@@ -79,48 +73,43 @@ class SlotMachine:
     def _calculate_payout(self, bet: int) -> int:
         """
         Calculate payout based on symbols.
-        
-        BUG: Jackpot should be 100x but uses wrong multiplier
-        BUG: Pair matching doesn't handle all combinations
         """
-        # BUG: Jackpot should be 100x, not 50x
+        # FIX: Jackpot is now 100x
         if all(s['symbol'] == '7️⃣' for s in self.last_spin):
-            return bet * 50  # BUG: Should be 100
+            return bet * 100
         
         # Three of a kind
         if self.last_spin[0]['symbol'] == self.last_spin[1]['symbol'] == self.last_spin[2]['symbol']:
             return bet * self.last_spin[0]['payout']
         
-        # BUG: Pair matching logic is flawed - doesn't correctly identify pairs
-        if (self.last_spin[0]['symbol'] == self.last_spin[1]['symbol'] or
-            self.last_spin[1]['symbol'] == self.last_spin[2]['symbol'] or
-            self.last_spin[0]['symbol'] == self.last_spin[2]['symbol']):
-            
-            # BUG: This logic may return wrong payout for pairs
-            if self.last_spin[0]['symbol'] == self.last_spin[1]['symbol']:
-                return bet * (self.last_spin[0]['payout'] // 2)
-            elif self.last_spin[1]['symbol'] == self.last_spin[2]['symbol']:
-                return bet * (self.last_spin[1]['payout'] // 2)
-            else:
-                # BUG: This case may not cover all pair scenarios
-                return bet * (self.last_spin[0]['payout'] // 2)
+        # FIX: Proper pair matching with all combinations
+        symbol_counts = {}
+        for s in self.last_spin:
+            symbol_counts[s['symbol']] = symbol_counts.get(s['symbol'], 0) + 1
+        
+        # Find if there's a pair
+        for symbol, count in symbol_counts.items():
+            if count == 2:
+                # Find the matching symbol's payout
+                for s in self.SYMBOLS:
+                    if s['symbol'] == symbol:
+                        return bet * (s['payout'] // 2)
         
         return 0
     
     def _get_win_message(self, payout: int) -> str:
         """
         Generate win message.
-        
-        BUG: Message thresholds don't match actual payout values
+
         """
-        # BUG: Thresholds are too high - many wins get "Small win"
-        if payout >= 10000:  # BUG: Should be 5000
+        # FIX: Proper thresholds for different win sizes
+        if payout >= 5000:
             return f"💰 JACKPOT! You won ${payout:,}! Incredible! 💰"
-        elif payout >= 5000:  # BUG: Should be 1000
+        elif payout >= 1000:
             return f"🎉 HUGE WIN! You won ${payout:,}! Amazing! 🎉"
-        elif payout >= 1000:  # BUG: Should be 500
+        elif payout >= 500:
             return f"🌟 Great win! You won ${payout:,}! 🌟"
-        elif payout >= 500:  # BUG: Should be 100
+        elif payout >= 100:
             return f"✨ Nice win! You won ${payout:,}! ✨"
         else:
             return f"✓ Small win! You won ${payout:,}"
@@ -128,10 +117,7 @@ class SlotMachine:
 
 class GamblingSystem:
     """
-    Main gambling system.
-    
-    BUG: Roulette doesn't handle invalid choices
-    BUG: Horse racing doesn't validate horse name
+    Main gambling system that coordinates all casino games.
     """
     
     def __init__(self, game_ref):
@@ -144,15 +130,28 @@ class GamblingSystem:
     
     def roulette_spin(self, bet: int, choice: str, number: int = None) -> Dict[str, Any]:
         """
-        Spin roulette.
-        
-        BUG: No validation for choice parameter
-        BUG: Number parameter not validated for range
+        Spin the roulette wheel.
         """
         char = self.game.character
         
+        # FIX: Validate bet
+        if bet <= 0:
+            return {"error": "Bet must be greater than 0!"}
+        
         if char.money < bet:
             return {"error": "Not enough money!"}
+        
+        # FIX: Validate choice
+        valid_choices = ["red", "black", "number"]
+        if choice not in valid_choices:
+            return {"error": f"Invalid choice! Must be one of: {', '.join(valid_choices)}"}
+        
+        # FIX: Validate number for number bets
+        if choice == "number":
+            if number is None:
+                return {"error": "Please select a number!"}
+            if not isinstance(number, int) or number < 0 or number > 36:
+                return {"error": "Number must be between 0 and 36!"}
         
         char.add_money(-bet)
         result = random.randint(0, 36)
@@ -168,7 +167,6 @@ class GamblingSystem:
         win_amount = 0
         message = ""
         
-        # BUG: No handling for invalid choice values
         if choice == "red" and result_color == "Red":
             win = True
             win_amount = bet * 2
@@ -178,12 +176,11 @@ class GamblingSystem:
         elif choice == "number" and number is not None and result == number:
             win = True
             win_amount = bet * 35
-        # BUG: No else clause for invalid choices
         
         if win:
             char.add_money(win_amount)
             char.change_stat('happiness', 10)
-            message = f"🎯 Ball landed on {result} ({result_color})! You win ${win_amount:,}! 🎯"
+            message = f"Ball landed on {result} ({result_color})! You win ${win_amount:,}!"
         else:
             char.change_stat('happiness', -5)
             message = f"Ball landed on {result} ({result_color}). You lose."
@@ -201,11 +198,12 @@ class GamblingSystem:
     def horse_race(self, bet: int, horse_name: str) -> Dict[str, Any]:
         """
         Place a bet on a horse race.
-        
-        BUG: No validation for horse_name
-        BUG: Duplicate horse names possible
         """
         char = self.game.character
+        
+        # FIX: Validate bet
+        if bet <= 0:
+            return {"error": "Bet must be greater than 0!"}
         
         if char.money < bet:
             return {"error": "Not enough money!"}
@@ -217,20 +215,25 @@ class GamblingSystem:
             {"name": "Storm", "odds": 2, "emoji": "🌪️"},
         ]
         
+        # FIX: Case-insensitive validation
+        horse_names = [h["name"].lower() for h in horses]
+        if horse_name.lower() not in horse_names:
+            return {"error": f"Invalid horse! Choose from: {', '.join(h['name'] for h in horses)}"}
+        
         char.add_money(-bet)
         
         winner = random.choice(horses)
         
-        # BUG: Case sensitivity - "thunder" won't match "Thunder"
-        if horse_name == winner["name"]:
+        # FIX: Case-insensitive comparison
+        if horse_name.lower() == winner["name"].lower():
             win_amount = bet * winner["odds"]
             char.add_money(win_amount)
             char.change_stat('happiness', 20)
-            message = f"🏇 {winner['emoji']} {winner['name']} wins! You win ${win_amount:,}! 🏇"
+            message = f"{winner['emoji']} {winner['name']} wins! You win ${win_amount:,}!"
             win = True
         else:
             char.change_stat('happiness', -5)
-            message = f"🏇 {winner['emoji']} {winner['name']} won. You lose."
+            message = f"{winner['emoji']} {winner['name']} won. You lose."
             win = False
             win_amount = 0
         
